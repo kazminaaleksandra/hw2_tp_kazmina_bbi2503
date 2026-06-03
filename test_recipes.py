@@ -74,3 +74,85 @@ class TestRecipe:
     def test_len_unique_ingredients(self):
         recipe = Recipe("Летний софт коктейль", [Ingredient("Банан", 1.0, "шт"), Ingredient("Клубника", 1.0, "шт"), Ingredient("Молоко", 200.0, "мл"),Ingredient("Банан", 0.5, "шт")])
         assert len(recipe) == 3
+
+
+class TestShoppingList:
+    def test_add_recipe_success(self):
+        shopping_list = ShoppingList()
+        recipe = Recipe("Пышный омлет", [Ingredient("Яйца", 3.0, "шт"),Ingredient("Молоко", 50.0, "мл")])
+        shopping_list.add_recipe(recipe, portions = 2)
+        res = shopping_list.get_list()
+        assert len(res) == 2
+        
+    def test_add_recipe_invalid_portions(self):
+        shopping_list = ShoppingList()
+        recipe = Recipe("Лазанья", [Ingredient("Томаты", 1.0, "шт")])
+        with pytest.raises(ValueError):
+            shopping_list.add_recipe(recipe, portions = 0 )
+        with pytest.raises(ValueError):
+            shopping_list.add_recipe(recipe, portions= -5)
+    
+    def test_remove_recipe_existing(self):
+        shopping_list = ShoppingList()
+        recipe1 = Recipe("Борщ", [Ingredient("Свекла", 2.0, "шт"), Ingredient("Капуста", 365.0, "г")])
+        recipe2 = Recipe("Битые огурцы", [Ingredient("Огурец", 3.0, "шт")])
+        shopping_list.add_recipe(recipe1, portions=1)
+        shopping_list.add_recipe(recipe2, portions=1)
+        shopping_list.remove_recipe("Борщ")
+        res = shopping_list.get_list()
+        assert len(res) == 1
+        assert res[0].name == "Огурец"
+    
+    def test_remove_recipe_not_existing(self):
+        shopping_list = ShoppingList()
+        recipe = Recipe("Пюре", [Ingredient("Картошка", 500.0, "г")])
+        shopping_list.add_recipe(recipe, portions=1)
+        shopping_list.remove_recipe("Рецепт не найден")
+        assert len(shopping_list.get_list()) == 1
+    
+    def test_get_list_ingredient_merging (self):
+        shopping_list = ShoppingList()
+        recipe1 = Recipe("Рисовая каша", [Ingredient("Молоко", 200.0, "мл")])
+        recipe2 = Recipe("Кофе", [Ingredient("Молоко", 50.0, "мл")])
+        shopping_list.add_recipe(recipe1, portions=1)
+        shopping_list.add_recipe(recipe2, portions=1)
+        res = shopping_list.get_list()
+        assert len(res) == 1
+        assert res[0].name == "Молоко"
+        assert res[0].quantity == 250.0
+    
+    def test_get_list_sorted_by_name(self):
+        shopping_list = ShoppingList()
+        recipe = Recipe("Тесто", [Ingredient("Яйца", 3.0, "шт"),Ingredient("Мука", 500.0, "г"), Ingredient("Сахар", 200.0, "г")])
+        shopping_list.add_recipe(recipe, portions= 1)
+        res = shopping_list.get_list()
+        names = [ingredient.name for ingredient in res]
+        assert names == sorted(names)  
+        assert names == ["Мука", "Сахар", "Яйца"]
+    
+    def test_add_combine_lists(self):
+        list1 = ShoppingList()
+        list2 = ShoppingList()
+        recipe1 = Recipe("Блины", [Ingredient("Мука", 500.0, "г")])
+        recipe2 = Recipe("пышный омлет", [Ingredient("Яйца", 3.0,"шт")])
+        list1.add_recipe(recipe1, portions = 1)
+        list2.add_recipe(recipe2, portions = 1)
+        mixed = list1 + list2
+        res = mixed.get_list()
+        assert len(res) == 2
+        ingredients = {ingredient.name: ingredient.quantity for ingredient in res}
+        assert ingredients["Мука"] == 500.0
+        assert ingredients["Яйца"] == 3.0
+    
+    def test_add_immutable(self):
+        list1 = ShoppingList()
+        list2 = ShoppingList()
+        recipe = Recipe("Крамбл кукис", [Ingredient("Корица", 10.0, "г")])
+        list1.add_recipe(recipe, portions = 1)
+        list2.add_recipe(recipe, portions = 2)
+        len1_before = len(list1.get_list())
+        len2_before = len(list2.get_list())
+        mixed = list1 + list2
+        assert len(list1.get_list()) == len1_before
+        assert len(list2.get_list()) == len2_before
+        assert mixed.get_list()[0].quantity == 30.0
