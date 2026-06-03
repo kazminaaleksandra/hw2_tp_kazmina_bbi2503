@@ -8,6 +8,7 @@
 ```bash
 pip install -r requirements.txt
 pytest
+```
 
 ## Автор
 Казьмина Александра, ББИ2503
